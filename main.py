@@ -4,7 +4,8 @@ app = Flask(__name__)
 from flask_bcrypt import Bcrypt
 bcrypt = Bcrypt(app)
 
-from flask_jwt_extended import JWTManager
+app.config["JWT_SECRET_KEY"] = "Super secret never guess key"
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt_identity
 jwt = JWTManager(app)
 
 from marshmallow.validate import Length
@@ -16,9 +17,10 @@ from flask_sqlalchemy import SQLAlchemy
 app.config["SQLALCHEMY_DATABASE_URI"] = "postgresql+psycopg2://mike_v:12345@localhost:5432/wombat_logon_db"
 # to avoid the deprecation warning
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-
 #create the database object
 db = SQLAlchemy(app)
+
+from datetime import date, timedelta
 
 #  COMMANDS AREA---------------------
 
@@ -77,19 +79,42 @@ users_schema = UserSchema(many=True)
 class Entry (db.Model):
     __tablename__ = "entries"
     
-    ent_id = db.Column(db.Integer, primary_key=True)
+    ent_id = db.Column(db.Integer, primary_key=True, auto_increment=True)
     ent_url = db.Column(db.String, nullable=False)
     ent_pswd = db.Column(db.String, nullable=False)
     ent_username = db.Column(db.String, nullable=True)
     ent_email = db.Column(db.String, nullable=True)
     
-     
+class EntrySchema(ma.Schema):
+    class Meta:
+        fields = ("ent_id", "ent_url", "ent_pswd", "ent_username", "ent_email")
+
+entry_schema = EntrySchema()
+entries_schema = EntrySchema(many=True)   
      
 # ROUTES ------------------------------
     
 @app.route("/")
 def index():
     return "Welcome to my Password Manager"
+
+
+@app.route("/entry/add", methods=["POST"])
+@jwt_required()
+def add_entry():
+    entry_fields = entry_schema.load(request.json)
+    
+    new_entry = Entry()
+    new_entry.ent_id = entry_fields["ent_id"]
+    new_entry.ent_url = entry_fields["ent_url"]
+    new_entry.ent_pswd = entry_fields["ent_pswd"]
+    new_entry.ent_username = entry_fields["ent_username"]
+    new_entry.ent_email = entry_fields["ent_email"]
+    
+    db.session.add(new_entry)
+    db.session.commit()
+    
+    return jsonify(entry_schema.dump(new_entry))
 
 
 @app.route("/auth/register", methods=["POST"])
@@ -108,7 +133,10 @@ def auth_register():
     
     db.session.add(user)
     db.session.commit()
-    return jsonify(user_schema.dump(user)), 201
+    
+    expiry = timedelta(days=1)
+    access_token = create_access_token(identity=str(user.user_name), expires_delta=expiry)
+    return jsonify({"user": user.user_name, "token": access_token})
 
 @app.route("/auth/login", methods=["POST"])
 def auth_login():
@@ -116,4 +144,7 @@ def auth_login():
     user = User.query.filter_by(user_name=user_fields["user_name"]).first()
     if not user or not bcrypt.check_password_hash(user.user_mast_password, user_fields["user_mast_password"]):
         return abort(401, description="Incorrect username and/or password")
-    return "token"
+    
+    expiry = timedelta(days=1)
+    access_token = create_access_token(identity=str(user.user_name), expires_delta=expiry)
+    return jsonify({"user": user.user_name,  "token": access_token})
