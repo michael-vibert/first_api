@@ -29,6 +29,11 @@ def create_tables():
     db.create_all()
     print("Tables created")
     
+@app.cli.command("drop_tables")
+def drop_tables():
+    db.drop_all()
+    print("All tables in db dropped")
+    
 @app.cli.command("drop")
 def drop_db():
     db.drop_all()
@@ -56,7 +61,7 @@ def seed_db():
     db.session.commit()
     print("Table seeded")
 
-# MODELS AREA ------------------------
+# MODELS and SCHEMAS AREA ------------------------
 
 class User(db.Model):
     __tablename__ = "users"
@@ -88,7 +93,7 @@ class Entry (db.Model):
 class EntrySchema(ma.Schema):
     class Meta:
         fields = ("ent_id", "ent_url", "ent_pswd", "ent_username", "ent_email")
-
+# must define an instance to use
 entry_schema = EntrySchema()
 entries_schema = EntrySchema(many=True)   
      
@@ -99,13 +104,13 @@ def index():
     return "Welcome to my Password Manager"
 
 
-@app.route("/entry/add", methods=["POST"])
+@app.post("/entry/add")
 @jwt_required()
 def add_entry():
     entry_fields = entry_schema.load(request.json)
     
     new_entry = Entry()
-    new_entry.ent_id = entry_fields["ent_id"]
+    # new_entry.ent_id = entry_fields["ent_id"]
     new_entry.ent_url = entry_fields["ent_url"]
     new_entry.ent_pswd = entry_fields["ent_pswd"]
     new_entry.ent_username = entry_fields["ent_username"]
@@ -115,6 +120,15 @@ def add_entry():
     db.session.commit()
     
     return jsonify(entry_schema.dump(new_entry))
+
+
+@app.get("/entries")
+def get_entries():
+    entries_list = Entry.query.all()
+    print(entries_list) 
+    data = entries_schema.dump(entries_list)
+    return jsonify(data)
+
 
 
 @app.route("/auth/register", methods=["POST"])
@@ -138,7 +152,7 @@ def auth_register():
     access_token = create_access_token(identity=str(user.user_name), expires_delta=expiry)
     return jsonify({"user": user.user_name, "token": access_token})
 
-@app.route("/auth/login", methods=["POST"])
+@app.post("/auth/login")
 def auth_login():
     user_fields = user_schema.load(request.json)
     user = User.query.filter_by(user_name=user_fields["user_name"]).first()
