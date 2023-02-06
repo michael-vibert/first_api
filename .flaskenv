@@ -1,3 +1,4 @@
-FLASK_APP=main
-FLASK_ENV=development
+FLASK_APP=create_app
+FLASK_ENV="development"
+
 
