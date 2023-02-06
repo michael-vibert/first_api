@@ -23,6 +23,11 @@ def create_app():
     bcrypt.init_app(app)
     jwt.init_app(app)
     
+    # import controllers and activate their blueprints
+    from controllers import registerable_controllers
+    for controller in registerable_controllers:
+        app.register_blueprint(controller)
+    
     return app
 
     
@@ -30,8 +35,8 @@ def create_app():
      
 # ROUTES ------------------------------
     
-@app.route("/")
-def index():
-    return "Welcome to my Password Manager"
+# @app.route("/")
+# def index():
+#     return "Welcome to my Password Manager"
 
 

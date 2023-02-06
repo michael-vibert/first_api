@@ -4,8 +4,8 @@ class Config(object):
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     JWT_SECRET_KEY = os.environ.get("SECRET_KEY")
     @property
-    def SQL_DATABASE_URI(self):
-        value = os.environ.get("DATABASE_URI")
+    def SQLALCHEMY_DATABASE_URI(self):
+        value = os.environ.get("SQLALCHEMY_DATABASE_URI")
         
         if not value:
             raise ValueError("Database URI not set correctly")

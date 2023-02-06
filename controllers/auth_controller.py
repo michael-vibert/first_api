@@ -30,7 +30,7 @@ def auth_register():
     access_token = create_access_token(identity=str(user.user_name), expires_delta=expiry)
     return jsonify({"user": user.user_name, "token": access_token})
 
-@app.post("/login")
+@auth.post("/login")
 def auth_login():
     # load up the posted data 
     user_fields = user_schema.load(request.json)

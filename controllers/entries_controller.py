@@ -31,10 +31,10 @@ def get_entries():
     entries_list = Entry.query.all()
     print(entries_list) 
     
-    return jsonify(entries_schema.dump(entries_list))
+    return jsonify(entry_schema.dump(entries_list))
 
 
-@app.get("/entries/<int:ent_id>")
+@entry.get("/entries/<int:ent_id>")
 def get_entry(ent_id):
     entry = Entry.query.get(ent_id)
     data = entry_schema.dump(entry)
