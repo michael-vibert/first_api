@@ -8,4 +8,8 @@ class User(db.Model):
     user_email = db.Column(db.String(), nullable=False, unique=True)
     user_mast_password = db.Column(db.String(), nullable=False, unique=True)
     user_admin = db.Column(db.Boolean(), default=False)
-    
+    entires = db.relationship(
+        "Entry", 
+        backref="user",
+        cascade="all, delete"
+    )
